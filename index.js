@@ -11,7 +11,7 @@ app.use(cors());
 async function getFaviconFromHtml(baseUrl) {
     try {
         const response = await axios.get(baseUrl, {
-            headers: { 'User-Agent': 'Roblox/WinInet' },
+            headers: { 'User-Agent': 'Roblox\WinInet' },
             timeout: 5000
         });
         const dom = new JSDOM(response.data);
