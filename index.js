@@ -11,7 +11,7 @@ app.use(cors());
 async function getFaviconFromHtml(baseUrl) {
     try {
         const response = await axios.get(baseUrl, {
-            headers: { 'User-Agent': 'Roblox/WinInet' },
+            headers: { 'User-Agent': 'Roblox\WinInet' },
             timeout: 5000
         });
         const dom = new JSDOM(response.data);
@@ -22,62 +22,50 @@ async function getFaviconFromHtml(baseUrl) {
 // ME So Tuffy Boi
 app.get('/proxyboi', async (req, res) => {
     let { url, size, isFavicon } = req.query;
-    if (!url) return res.status(400).send('url is required!');
+    if (!url) return res.status(400).send('url is fucking required!');
     if (!url.startsWith('http')) url = 'http://' + url;
-
-
-    const useragent = 'Roblox/Wininet';
 
     try {
         let finalUrl = url;
 
+
         if (isFavicon === 'true') {
             const directIco = new URL('/favicon.ico', url).href;
             try {
-
-                await axios.head(directIco, { 
-                    headers: { 'User-Agent': useragent },
-                    timeout: 3000 
-                });
+                await axios.head(directIco, { headers: { 'User-Agent': 'Roblox/WinInet' } });
                 finalUrl = directIco;
             } catch (e) {
-
                 const scraped = await getFaviconFromHtml(url);
                 finalUrl = scraped || directIco; 
             }
         }
 
+
         const response = await axios.get(finalUrl, {
-            headers: { 
-                'User-Agent': useragent, 
-                'Accept': 'image/png,image/x-icon,image/*;q=0.9' 
-            },
+            headers: { 'User-Agent': 'Roblox/WinInet', 'Accept': '*/*' },
             responseType: 'arraybuffer',
             timeout: 10000
         });
 
+        let data = response.data;
+        let contentType = response.headers['content-type'] || 'image/png';
 
-        let pipeline = sharp(response.data);
 
-        if (size) {
+        if (size && contentType.startsWith('image/')) {
             const targetSize = parseInt(size);
-            pipeline = pipeline.resize(targetSize, targetSize, {
-                fit: 'contain',
-                background: { r: 0, g: 0, b: 0, alpha: 0 } 
-            });
+            data = await sharp(data)
+                .resize(targetSize, targetSize, {
+                    fit: 'contain',
+                    background: { r: 0, g: 0, b: 0, alpha: 0 }
+                })
+                .png()
+                .toBuffer();
+            contentType = 'image/png';
         }
 
-
-        const outputBuffer = await pipeline.png().toBuffer();
-
-
-        res.set({
-            'Content-Type': 'image/png',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'public, max-age=86400'
-        });
-
-        res.send(outputBuffer);
+        res.set('Content-Type', contentType);
+        res.set('Access-Control-Allow-Origin', '*'); 
+        res.send(data);
 
     } catch (error) {
         res.status(500).send(`error: ${error.message}`);
